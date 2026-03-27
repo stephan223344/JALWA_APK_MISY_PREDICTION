@@ -4,6 +4,10 @@ import {
   Animated, PanResponder, Dimensions, StatusBar,
 } from "react-native";
 import { WebView } from "react-native-webview";
+import { BackHandler } from "react-native";
+
+const webViewRef = useRef<WebView>(null);
+const canGoBack = useRef(false);
 
 const { width: W, height: H } = Dimensions.get("window");
 const FAB_SIZE = 65;
@@ -55,6 +59,34 @@ export default function Index() {
     }, 5000);
     return () => clearTimeout(t);
   }, []);
+
+  //Back track
+  useEffect(() => {
+  const backAction = () => {
+
+    // 1️⃣ Si on est sur prediction → revenir au game
+    if (activeView === "prediction") {
+      setActiveView("game");
+      return true;
+    }
+
+    // 2️⃣ Si WebView peut revenir
+    if (canGoBack.current && webViewRef.current) {
+      webViewRef.current.goBack();
+      return true;
+    }
+
+    // 3️⃣ Sinon → quitter app
+    return false;
+  };
+
+  const backHandler = BackHandler.addEventListener(
+    "hardwareBackPress",
+    backAction
+  );
+
+  return () => backHandler.remove();
+}, [activeView]);
 
   //détection dépôt webview
 const injectedJS = `
@@ -170,7 +202,7 @@ const injectedJS = `
     }
 
     if (!hasDeposited) {
-        showMessage("Please Deposit");
+        showMessage("🔒 Please Deposit to hack");
         shakeFab();
         return;
     }
@@ -194,7 +226,10 @@ const injectedJS = `
           source={{ uri: INITIAL_URL }}
           style={styles.webview}
           onLoad={handleLoad}
-          onNavigationStateChange={handleNavigationChange}
+          onNavigationStateChange={(navState) => {
+            canGoBack.current = navState.canGoBack;
+            handleNavigationChange(navState);
+          }}
 
           injectedJavaScript={injectedJS}
 
@@ -221,6 +256,7 @@ const injectedJS = `
         <WebView
           source={{ uri: PREDICTION_URL }}
           style={styles.webview}
+          cacheEnabled={false}
           javaScriptEnabled
           domStorageEnabled
           allowsInlineMediaPlayback
