@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 import * as NavigationBar from "expo-navigation-bar";
+import * as Haptics from "expo-haptics";
 
 const { width: W, height: H } = Dimensions.get("window");
 const FAB_SIZE = 65;
@@ -28,7 +29,7 @@ function isUserLoggedIn(url: string): boolean {
 
 export default function Index() {
 
-  // ✅ FIX CRASH (hooks dans composant)
+  // ✅ FIX CRASH
   const webViewRef = useRef<WebView>(null);
   const canGoBack = useRef(false);
 
@@ -38,7 +39,6 @@ export default function Index() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [msgVisible, setMsgVisible] = useState(false);
   const [hasDeposited, setHasDeposited] = useState(false);
-
   const [msgText, setMsgText] = useState("");
 
   const loaderOpacity = useRef(new Animated.Value(1)).current;
@@ -51,7 +51,7 @@ export default function Index() {
   const dragDistance = useRef(0);
   const DRAG_THRESHOLD = 8;
 
-  // ✅ NAV BAR COLOR
+  // ✅ NAV BAR FIX
   useEffect(() => {
     NavigationBar.setBackgroundColorAsync("#000");
   }, []);
@@ -67,7 +67,7 @@ export default function Index() {
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ BACK BUTTON FIX
+  // ✅ BACK BUTTON PRO
   useEffect(() => {
     const backAction = () => {
 
@@ -92,30 +92,36 @@ export default function Index() {
     return () => backHandler.remove();
   }, [activeView]);
 
-  // ✅ SAFE injected JS
+  // ✅ OPTIMIZED injected JS
   const injectedJS = `
     (function() {
+
+      let alreadyLogged = false;
+      let alreadyDeposit = false;
+
       function detect() {
         const text = document.body?.innerText?.toLowerCase() || "";
 
-        if (
-          text.includes("wallet") ||
-          text.includes("deposit") ||
-          text.includes("withdraw")
-        ) {
+        if (!alreadyLogged &&
+          (text.includes("wallet") || text.includes("deposit"))) {
+          alreadyLogged = true;
           window.ReactNativeWebView.postMessage("LOGGED_IN");
         }
 
-        const hasMoney =
+        if (!alreadyDeposit &&
           text.includes("balance") &&
           !text.includes("0.00") &&
-          !text.includes("0,00");
-
-        if (hasMoney) {
+          !text.includes("0,00")) {
+          alreadyDeposit = true;
           window.ReactNativeWebView.postMessage("HAS_DEPOSIT");
         }
       }
-      setInterval(detect, 2000);
+
+      setTimeout(() => {
+        detect();
+        setInterval(detect, 5000);
+      }, 3000);
+
     })();
   `;
 
@@ -175,6 +181,10 @@ export default function Index() {
   ).current;
 
   const handleFabPress = () => {
+
+    // ✅ vibration PRO
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     if (dragDistance.current > DRAG_THRESHOLD) return;
 
     if (!isLoggedIn) {
@@ -197,27 +207,58 @@ export default function Index() {
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
       {/* GAME */}
-      <View style={[styles.webviewWrapper, { zIndex: activeView === "game" ? 2 : 1 }]}>
+      <View
+        style={[
+          styles.webviewWrapper,
+          { zIndex: activeView === "game" ? 2 : 1 },
+        ]}
+        pointerEvents={activeView === "game" ? "auto" : "none"}
+      >
         <WebView
-          ref={webViewRef} // ✅ IMPORTANT
+          ref={webViewRef}
           source={{ uri: INITIAL_URL }}
           style={styles.webview}
+
           onLoad={handleLoad}
+
           onNavigationStateChange={handleNavigationChange}
+
           injectedJavaScript={injectedJS}
+
           onMessage={(event) => {
             const msg = event.nativeEvent.data;
             if (msg === "LOGGED_IN") setIsLoggedIn(true);
             if (msg === "HAS_DEPOSIT") setHasDeposited(true);
           }}
+
+          // 🚀 PERFORMANCE
+          javaScriptEnabled
+          domStorageEnabled
+          cacheEnabled
+          cacheMode="LOAD_DEFAULT"
+          androidLayerType="hardware"
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          setSupportMultipleWindows={false}
+
+          // 🔥 ANTI CRASH
+          onError={() => showMessage("⚠️ Network error")}
+          onHttpError={() => showMessage("⚠️ Server error")}
         />
       </View>
 
       {/* PREDICTION */}
-      <View style={[styles.webviewWrapper, { zIndex: activeView === "prediction" ? 2 : 1 }]}>
+      <View
+        style={[
+          styles.webviewWrapper,
+          { zIndex: activeView === "prediction" ? 2 : 1 },
+        ]}
+        pointerEvents={activeView === "prediction" ? "auto" : "none"}
+      >
         <WebView
           source={{ uri: PREDICTION_URL }}
           style={styles.webview}
+          cacheEnabled={false}
         />
       </View>
 
@@ -234,17 +275,38 @@ export default function Index() {
         <Animated.View
           style={[
             styles.fab,
-            { transform: [...fabPosition.getTranslateTransform(), { scale: fabScale }] },
+            {
+              transform: [
+                ...fabPosition.getTranslateTransform(),
+                { scale: fabScale },
+              ],
+            },
           ]}
           {...panResponder.panHandlers}
         >
-          <TouchableOpacity style={styles.fabTouch} onPress={handleFabPress}>
+          <TouchableOpacity
+            style={styles.fabTouch}
+            onPress={handleFabPress}
+            activeOpacity={0.85}
+          >
             <View style={[styles.fabInner, isLoggedIn && styles.fabInnerActive]}>
               <Text style={styles.fabEmoji}>
-                {!isLoggedIn ? "🔒" : !hasDeposited ? "💰" : activeView === "game" ? "🎯" : "🎮"}
+                {!isLoggedIn
+                  ? "🔒"
+                  : !hasDeposited
+                  ? "💰"
+                  : activeView === "game"
+                  ? "🎯"
+                  : "🎮"}
               </Text>
               <Text style={[styles.fabLabel, isLoggedIn && styles.fabLabelActive]}>
-                {!isLoggedIn ? "LOGIN" : !hasDeposited ? "DEPOSIT" : activeView === "prediction" ? "GAME" : "WIN"}
+                {!isLoggedIn
+                  ? "LOGIN"
+                  : !hasDeposited
+                  ? "DEPOSIT"
+                  : activeView === "prediction"
+                  ? "GAME"
+                  : "WIN"}
               </Text>
             </View>
           </TouchableOpacity>
@@ -253,7 +315,10 @@ export default function Index() {
 
       {/* MESSAGE */}
       {msgVisible && (
-        <Animated.View style={[styles.message, { opacity: msgOpacity }]}>
+        <Animated.View
+          style={[styles.message, { opacity: msgOpacity }]}
+          pointerEvents="none"
+        >
           <Text style={styles.messageText}>{msgText}</Text>
         </Animated.View>
       )}
@@ -273,7 +338,9 @@ function Spinner() {
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   });
-  return <Animated.View style={[styles.spinner, { transform: [{ rotate: spin }] }]} />;
+  return (
+    <Animated.View style={[styles.spinner, { transform: [{ rotate: spin }] }]} />
+  );
 }
 
 // STYLES (inchangé)
