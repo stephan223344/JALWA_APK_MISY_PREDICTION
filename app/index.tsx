@@ -336,15 +336,6 @@ const injectedJS = `
         />
       )}
 
-      {/* ── Bandeau page active ───────────────────────────────────────── */}
-      {isLoggedIn && (
-        <View style={styles.topBanner} pointerEvents="none">
-          <Text style={styles.topBannerText}>
-            {activeView === "prediction" ? "🎯 Prédictions" : "🎮 Jeu"}
-          </Text>
-        </View>
-      )}
-
       {/* ── Message erreur ───────────────────────────────────────────── */}
       {msgVisible && (
         <Animated.View
