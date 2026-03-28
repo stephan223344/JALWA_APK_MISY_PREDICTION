@@ -140,9 +140,9 @@ export default function Index() {
     setMsgText(text);
     setMsgVisible(true);
     Animated.sequence([
-      Animated.timing(msgOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.delay(2500),
-      Animated.timing(msgOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(msgOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(3000),
+      Animated.timing(msgOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start(() => setMsgVisible(false));
   };
 
@@ -188,13 +188,13 @@ export default function Index() {
     if (dragDistance.current > DRAG_THRESHOLD) return;
 
     if (!isLoggedIn) {
-      showMessage("🔒 Please Login !");
+      showMessage("🔒 Please Login to Hack !");
       shakeFab();
       return;
     }
 
     if (!hasDeposited) {
-      showMessage("💰 Please Deposit !");
+      showMessage("💰 Please Deposit to Hack !");
       shakeFab();
       return;
     }
@@ -388,8 +388,14 @@ const styles = StyleSheet.create({
     bottom: 110,
     alignSelf: "center",
     backgroundColor: "#1a1a1a",
-    padding: 12,
+    borderWidth:1.5,
+    borderColor:"#e02020",
+    paddingHorizontal: 20,
+    paddingVertical:12,
     borderRadius: 10,
+    zIndex:9999,
+    elevation:999,
+    maxWidth: W * 0.85,
   },
   messageText: { color: "#fff" },
 });
