@@ -50,6 +50,11 @@ export default function Index() {
   const dragDistance = useRef(0);
   const DRAG_THRESHOLD = 8; // pixels
 
+  useEffect(() => {
+    NavigationBar.setBackgroundColorAsync('#000');
+    NavigationBar.setButtonStyleAsync('light');
+  },[]);
+
   // ─── FAB apparaît après 5s ────────────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => {
@@ -80,12 +85,6 @@ export default function Index() {
     // 3️⃣ Sinon → quitter app
     return false;
   };
-
-  useEffect(() => {
-    NavigationBar.setBackgroundColorAsync('#000');
-    NavigationBar.setButtonStyleAsync('light');
-
-  })
 
   const backHandler = BackHandler.addEventListener(
     "hardwareBackPress",
