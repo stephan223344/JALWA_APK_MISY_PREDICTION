@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { BackHandler } from "react-native";
+import * as NavigationBar from "expo-navigation-bar";
 
 const webViewRef = useRef<WebView>(null);
 const canGoBack = useRef(false);
@@ -79,6 +80,12 @@ export default function Index() {
     // 3️⃣ Sinon → quitter app
     return false;
   };
+
+  useEffect(() => {
+    NavigationBar.setBackgroundColorAsync('#000');
+    NavigationBar.setButtonStyleAsync('light');
+
+  })
 
   const backHandler = BackHandler.addEventListener(
     "hardwareBackPress",
