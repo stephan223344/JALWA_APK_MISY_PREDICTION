@@ -4,7 +4,7 @@
     "slug": "gowinns",
     "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/jai HACK.jpg",
+    "icon": "./assets/images/jai.png",
     "scheme": "wingoapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,21 +12,21 @@
       "supportsTablet": true
     },
     "android": {
-      "icon":"./assets/images/jai HACK.jpg",
+      "icon":"./assets/images/jai.png",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.stephanckaert.Gowinns"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/jai HACK.jpg"
+      "favicon": "./assets/images/jai.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/jai HACH.jpg",
+          "image": "./assets/images/jai.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
