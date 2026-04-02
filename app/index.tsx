@@ -1,11 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import * as Haptics from "expo-haptics";
+import * as NavigationBar from "expo-navigation-bar";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  Animated, PanResponder, Dimensions, StatusBar, BackHandler
+  Animated,
+  BackHandler,
+  Dimensions,
+  PanResponder,
+  StatusBar,
+  StyleSheet,
+  Text, TouchableOpacity,
+  View
 } from "react-native";
 import { WebView } from "react-native-webview";
-import * as NavigationBar from "expo-navigation-bar";
-import * as Haptics from "expo-haptics";
 
 const { width: W, height: H } = Dimensions.get("window");
 const FAB_SIZE = 65;
@@ -162,11 +168,7 @@ export default function Index() {
 
       onPanResponderGrant: () => {
         dragDistance.current = 0;
-        fabPosition.setOffset({
-          x: (fabPosition.x as any)._value,
-          y: (fabPosition.y as any)._value,
-        });
-        fabPosition.setValue({ x: 0, y: 0 });
+        fabPosition.extractOffset();
       },
 
       onPanResponderMove: (_, g) => {
@@ -175,6 +177,10 @@ export default function Index() {
       },
 
       onPanResponderRelease: () => {
+        fabPosition.flattenOffset();
+      },
+      
+      onPanResponderTerminate: () => {
         fabPosition.flattenOffset();
       },
     })
