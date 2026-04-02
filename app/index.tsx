@@ -10,7 +10,7 @@ import * as Haptics from "expo-haptics";
 const { width: W, height: H } = Dimensions.get("window");
 const FAB_SIZE = 65;
 
-const INITIAL_URL = "https://www.jgame7.com/#/register?invitationCode=17341651055";
+const INITIAL_URL = "https://www.jaiclub24.com/#/register?invitationCode=12644100603" ;//"https://www.jgame7.com/#/register?invitationCode=17341651055"
 const PREDICTION_URL = "https://wingo-prediction-ck.onrender.com/";
 
 const AUTH_PATTERNS = ["/register", "/login", "/sign"];
