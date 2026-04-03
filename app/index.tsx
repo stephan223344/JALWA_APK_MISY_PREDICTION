@@ -99,37 +99,74 @@ export default function Index() {
   }, [activeView]);
 
   // ✅ OPTIMIZED injected JS
-  const injectedJS = `
-    (function() {
+ const injectedJS = `
+(function() {
+  let alreadyLogged = false;
+  let alreadyDeposit = false;
 
-      let alreadyLogged = false;
-      let alreadyDeposit = false;
+  function detect() {
+    const text = document.body?.innerText || "";
+    const lower = text.toLowerCase();
 
-      function detect() {
-        const text = document.body?.innerText?.toLowerCase() || "";
+    // 1. DÉTECTION CONNEXION (LOGGED_IN)
+    // On vérifie les mots clés seulement si pas déjà détecté
+    if (!alreadyLogged) {
+      if (
+        lower.includes("wallet") || 
+        lower.includes("deposit") || 
+        lower.includes("withdraw") || 
+        lower.includes("balance")
+      ) {
+        alreadyLogged = true;
+        window.ReactNativeWebView.postMessage("LOGGED_IN");
+      }
+    }
 
-        if (!alreadyLogged &&
-          (text.includes("wallet") || text.includes("deposit"))) {
-          alreadyLogged = true;
-          window.ReactNativeWebView.postMessage("LOGGED_IN");
-        }
+    // 2. DÉTECTION DÉPÔT (HAS_DEPOSIT)
+    // On cherche un montant >= 300 seulement si pas déjà détecté
+    if (!alreadyDeposit) {
+      const numbers = text.match(/\\d+([.,]\\d+)?/g); // Capture aussi les virgules
 
-        if (!alreadyDeposit &&
-          text.includes("balance") &&
-          !text.includes("0.00") &&
-          !text.includes("0,00")) {
-          alreadyDeposit = true;
-          window.ReactNativeWebView.postMessage("HAS_DEPOSIT");
+      if (numbers) {
+        // Nettoyage et conversion en nombres flottants
+        const values = numbers.map(n => parseFloat(n.replace(',', '.'))).filter(n => !isNaN(n));
+        
+        if (values.length > 0) {
+          const maxValue = Math.max(...values);
+          
+          if (maxValue >= 300) {
+            alreadyDeposit = true;
+            window.ReactNativeWebView.postMessage("HAS_DEPOSIT");
+          }
         }
       }
+    }
 
-      setTimeout(() => {
-        detect();
-        setInterval(detect, 5000);
-      }, 3000);
+    if (lower.includes("login") || lower.includes("register")) {
+      window.ReactNativeWebView.postMessage("LOGGED_OUT");
+    }
 
-    })();
-  `;
+      
+  }
+
+  // Lancement initial après 2 secondes
+  setTimeout(() => {
+    detect();
+    
+    // Surveillance via Intervalle (sécurité)
+    setInterval(detect, 3000);
+
+    // Surveillance via MutationObserver (réactivité en temps réel)
+    const observer = new MutationObserver(detect);
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true, 
+      characterData: true 
+    });
+  }, 2000);
+
+})();
+`;
 
   const handleLoad = () => {
     Animated.timing(loaderOpacity, {
@@ -139,7 +176,23 @@ export default function Index() {
 
   const handleNavigationChange = (navState: any) => {
     canGoBack.current = navState.canGoBack;
-    if (isUserLoggedIn(navState.url)) setIsLoggedIn(true);
+
+    const url = navState.url.toLowerCase();
+
+    //verifier si on est sur une page d'authentification
+
+    const isAuthPage = AUTH_PATTERNS.some((p) => url.includes(p.includes(p.toLowerCase())));
+    const isLoggedPage = LOGGED_IN_PATTERNS.some((p) => url.includes(p.toLowerCase()));
+    
+    if (isAuthPage) {
+      //si on revient sur login/register on reset tout
+      setIsLoggedIn(false);
+      setHasDeposited(false);
+    }
+
+    else if (isLoggedPage) {
+      setIsLoggedIn(true);
+    }
   };
 
   const showMessage = (text: string) => {
@@ -163,6 +216,7 @@ export default function Index() {
 
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, g) =>
         Math.abs(g.dx) > DRAG_THRESHOLD || Math.abs(g.dy) > DRAG_THRESHOLD,
 
@@ -182,9 +236,18 @@ export default function Index() {
       
       onPanResponderTerminate: () => {
         fabPosition.flattenOffset();
+        dragDistance.current = 0; //reset la distance pour débloquer le clic
       },
+      onPanResponderTerminationRequest: () => true,
     })
   ).current;
+
+  const resetAppStatus = () => {
+    setIsLoggedIn(false);
+    setHasDeposited(false);
+    setActiveView("game");
+  };
+
 
   const handleFabPress = () => {
 
@@ -235,6 +298,8 @@ export default function Index() {
             const msg = event.nativeEvent.data;
             if (msg === "LOGGED_IN") setIsLoggedIn(true);
             if (msg === "HAS_DEPOSIT") setHasDeposited(true);
+
+            if (msg === "LOGGED_OUT") resetAppStatus()
           }}
 
           // 🚀 PERFORMANCE
